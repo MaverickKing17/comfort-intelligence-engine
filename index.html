@@ -16,15 +16,20 @@
               sans: ['Inter', 'sans-serif'],
             },
             colors: {
-              bg: '#020203',
-              card: '#09090b',
-              border: '#1f1f23',
+              bg: '#0b0f19',     /* Deep Stratosphere Blue */
+              card: '#151b2b',   /* Lighter Slate Blue for depth */
+              border: '#252b3d', /* Subtle Border */
               neonGreen: '#10b981',
               neonAmber: '#f59e0b',
               neonRed: '#ef4444',
             },
             boxShadow: {
               'glow': '0 0 20px rgba(16, 185, 129, 0.15)',
+              'premium': '0 20px 40px -10px rgba(0, 0, 0, 0.5)',
+            },
+            backgroundImage: {
+              'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+              'shimmer': 'linear-gradient(45deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 60%)',
             }
           }
         }
@@ -32,8 +37,10 @@
     </script>
     <style>
       body {
-        background-color: #020203;
+        background-color: #0b0f19;
         color: #e5e7eb;
+        background-image: radial-gradient(circle at 50% 0%, #1a2333 0%, #0b0f19 60%);
+        background-attachment: fixed;
       }
       /* Hide scrollbar for clean UI */
       ::-webkit-scrollbar {
@@ -41,10 +48,10 @@
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #020203; 
+        background: #0b0f19; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #1f1f23; 
+        background: #252b3d; 
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
