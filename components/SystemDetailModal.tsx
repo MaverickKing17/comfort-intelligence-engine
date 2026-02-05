@@ -1,6 +1,6 @@
 import React from 'react';
 import { HVACSystem, HealthStatus } from '../types';
-import { X, Wrench, FileText, Send, Zap, BrainCircuit, TrendingDown, Clock, AlertOctagon } from 'lucide-react';
+import { X, Wrench, FileText, Send, Zap, BrainCircuit, TrendingDown, Clock, CalendarCheck } from 'lucide-react';
 
 interface SystemDetailModalProps {
   system: HVACSystem;
@@ -50,6 +50,38 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
 
   const prediction = getPrediction();
 
+  // Mock Maintenance Schedule
+  const getMaintenanceSchedule = () => {
+    // Generate dates based on current date
+    const today = new Date();
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(today.getMonth() + 1);
+    
+    const nextSeason = new Date(today);
+    nextSeason.setMonth(today.getMonth() + 4);
+
+    return [
+      {
+        id: 1,
+        task: "MERV-11 Filter Replacement",
+        reason: "High static pressure trend detected",
+        date: nextMonth.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        urgency: system.metrics.systemBreathing.status === HealthStatus.Warning ? "High" : "Normal",
+        icon: "filter"
+      },
+      {
+        id: 2,
+        task: "Flame Sensor Calibration",
+        reason: "Micro-amp reading fluctuation",
+        date: nextSeason.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        urgency: "Normal",
+        icon: "sensor"
+      }
+    ];
+  };
+
+  const maintenanceTasks = getMaintenanceSchedule();
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="bg-card border border-border w-full max-w-2xl rounded-2xl shadow-premium overflow-hidden flex flex-col max-h-[90vh]">
@@ -75,7 +107,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
         {/* Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-8">
           
-          {/* AI Predictive Analysis (New Section) */}
+          {/* AI Predictive Analysis (Reliability) */}
           <div className="relative overflow-hidden rounded-xl border border-indigo-500/30 bg-gradient-to-br from-[#1e2330] to-[#151922]">
             {/* Background effects */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none"></div>
@@ -138,6 +170,44 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* AI Maintenance Schedule (New Section) */}
+          <div className="rounded-xl border border-border bg-[#121620] overflow-hidden">
+             <div className="p-4 border-b border-border bg-white/5 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                   <CalendarCheck className="w-4 h-4 text-emerald-400" />
+                   <h3 className="text-sm font-bold text-white tracking-wide">Predictive Maintenance</h3>
+                </div>
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded border border-emerald-500/20">
+                   Auto-Scheduled
+                </span>
+             </div>
+             <div className="p-4 space-y-4">
+                {maintenanceTasks.map(task => (
+                   <div key={task.id} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-3">
+                         <div className={`h-8 w-8 rounded-lg flex items-center justify-center border ${
+                            task.urgency === 'High' ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-[#1f2536] border-border text-gray-400'
+                         }`}>
+                            {task.icon === 'filter' ? <Wrench className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                         </div>
+                         <div>
+                            <p className="text-sm font-medium text-gray-200 group-hover:text-white transition">{task.task}</p>
+                            <p className="text-xs text-gray-500">{task.reason}</p>
+                         </div>
+                      </div>
+                      <div className="text-right">
+                         <p className={`text-sm font-mono font-bold ${task.urgency === 'High' ? 'text-amber-400' : 'text-gray-300'}`}>
+                            {task.date}
+                         </p>
+                         {task.urgency === 'High' && (
+                            <p className="text-[10px] text-amber-500 animate-pulse">Action Required</p>
+                         )}
+                      </div>
+                   </div>
+                ))}
+             </div>
           </div>
 
           {/* AI Insights Section (Existing) */}
