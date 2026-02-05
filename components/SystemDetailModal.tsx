@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HVACSystem, HealthStatus } from '../types';
-import { X, Wrench, FileText, Send, Zap, BrainCircuit, TrendingDown, Clock, CalendarCheck } from 'lucide-react';
+import { X, Wrench, FileText, Send, Zap, BrainCircuit, TrendingDown, Clock, CalendarCheck, Wifi, RefreshCw } from 'lucide-react';
 
 interface SystemDetailModalProps {
   system: HVACSystem;
@@ -9,14 +9,53 @@ interface SystemDetailModalProps {
 }
 
 export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, onClose, onGenerateReport }) => {
-  const isCritical = system.metrics.heatingPower.status === HealthStatus.Critical || system.metrics.heatingPower.status === HealthStatus.Warning;
+  // Local state for real-time simulation
+  const [currentMetrics, setCurrentMetrics] = useState(system.metrics);
+  const [isLive, setIsLive] = useState(true);
+  const [lastSynced, setLastSynced] = useState(new Date());
+
+  // Real-time sync effect
+  useEffect(() => {
+    if (!isLive) return;
+
+    const interval = setInterval(() => {
+      setCurrentMetrics(prev => {
+        // Helper to randomize number slightly to simulate sensor noise/live readings
+        const fluctuate = (val: number | string, magnitude: number = 0.5) => {
+            if (typeof val === 'string') return val;
+            const change = (Math.random() - 0.5) * magnitude;
+            return Math.max(0, Math.min(100, Math.round((val + change) * 100) / 100));
+        };
+
+        return {
+           ...prev,
+           heatingPower: {
+             ...prev.heatingPower,
+             value: fluctuate(prev.heatingPower.value, 1.5),
+             // Randomly flip trend occasionally
+             trend: Math.random() > 0.9 ? (Math.random() > 0.5 ? 'up' : 'down') : prev.heatingPower.trend
+           },
+           efficiency: {
+             ...prev.efficiency,
+             value: fluctuate(prev.efficiency.value, 0.2)
+           },
+           systemBreathing: prev.systemBreathing // Keep string values stable
+        };
+      });
+      setLastSynced(new Date());
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [isLive]);
+
+  const isCritical = currentMetrics.heatingPower.status === HealthStatus.Critical || currentMetrics.heatingPower.status === HealthStatus.Warning;
   
   // Enterprise Logic: Show buttons only if critical/warning
   const showSyncButtons = isCritical || system.insights.length > 0;
 
   // Mock Prediction Logic based on health
   const getPrediction = () => {
-    if (system.metrics.heatingPower.status === HealthStatus.Critical) {
+    if (currentMetrics.heatingPower.status === HealthStatus.Critical) {
       return {
         component: "Heat Exchanger",
         timeframe: "Immediate (< 48 hrs)",
@@ -26,7 +65,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
         bgColor: "bg-red-500/10",
         borderColor: "border-red-500/20"
       };
-    } else if (system.metrics.heatingPower.status === HealthStatus.Warning) {
+    } else if (currentMetrics.heatingPower.status === HealthStatus.Warning) {
       return {
         component: "Blower Motor",
         timeframe: "3 - 6 Months",
@@ -66,7 +105,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
         task: "MERV-11 Filter Replacement",
         reason: "High static pressure trend detected",
         date: nextMonth.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        urgency: system.metrics.systemBreathing.status === HealthStatus.Warning ? "High" : "Normal",
+        urgency: currentMetrics.systemBreathing.status === HealthStatus.Warning ? "High" : "Normal",
         icon: "filter"
       },
       {
@@ -92,16 +131,30 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
             <div className="flex items-center gap-3 mb-1">
               <h2 className="text-xl font-bold text-white">{system.address}</h2>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                system.metrics.heatingPower.status === 'Good' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500'
+                currentMetrics.heatingPower.status === 'Good' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500'
               }`}>
-                {system.metrics.heatingPower.status}
+                {currentMetrics.heatingPower.status}
               </span>
             </div>
-            <p className="text-gray-400 text-sm">{system.ownerName} • {system.systemType}</p>
+            <div className="flex items-center gap-4 text-sm text-gray-400">
+                <span>{system.ownerName} • {system.systemType}</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono">
+                    <div className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </div>
+                    LIVE SYNC
+                </div>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-gray-500 hidden sm:block">
+                Last update: {lastSynced.toLocaleTimeString()}
+            </span>
+            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition">
+                <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -150,7 +203,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
                   <span>6 Months</span>
                   <span>1 Year</span>
                 </div>
-                <div className="h-2.5 w-full bg-[#0b0f19] rounded-full overflow-hidden relative border border-white/5">
+                <div className="h-2.5 w-full bg-[#111827] rounded-full overflow-hidden relative border border-white/5">
                    {/* Danger Zone Gradient */}
                    <div className={`absolute top-0 bottom-0 right-0 w-[60%] bg-gradient-to-l from-red-500/50 to-transparent`}></div>
                    {/* Marker */}
@@ -173,7 +226,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
           </div>
 
           {/* AI Maintenance Schedule (New Section) */}
-          <div className="rounded-xl border border-border bg-[#121620] overflow-hidden">
+          <div className="rounded-xl border border-border bg-[#18202f] overflow-hidden">
              <div className="p-4 border-b border-border bg-white/5 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                    <CalendarCheck className="w-4 h-4 text-emerald-400" />
@@ -241,37 +294,51 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
 
           {/* Vital Signs Grid */}
           <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Live Telemetry</h3>
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Live Telemetry</h3>
+                <div className="flex items-center gap-1 text-[10px] text-green-500">
+                    <Wifi className="w-3 h-3" />
+                    <span>Stream Stable</span>
+                </div>
+            </div>
+            
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="bg-[#0b0f19] p-4 rounded-lg border border-border hover:border-gray-600 transition">
+              <div className="bg-[#111827] p-4 rounded-lg border border-border hover:border-gray-600 transition">
                 <div className="flex justify-between items-start mb-2">
-                  <p className="text-xs text-gray-500">{system.metrics.heatingPower.simpleEnglishLabel}</p>
-                  <ActivityIndicator status={system.metrics.heatingPower.status} />
+                  <p className="text-xs text-gray-500">{currentMetrics.heatingPower.simpleEnglishLabel}</p>
+                  <ActivityIndicator status={currentMetrics.heatingPower.status} />
                 </div>
-                <p className="text-xl font-semibold text-white">
-                  {system.metrics.heatingPower.value}{system.metrics.heatingPower.unit}
-                </p>
-                <p className="text-[10px] text-gray-600 mt-1 font-mono">{system.metrics.heatingPower.technicalLabel}</p>
+                <div className="flex items-baseline gap-1">
+                    <p className="text-xl font-semibold text-white">
+                    {currentMetrics.heatingPower.value}{currentMetrics.heatingPower.unit}
+                    </p>
+                    {currentMetrics.heatingPower.trend && (
+                        <span className={`text-[10px] ${currentMetrics.heatingPower.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                            {currentMetrics.heatingPower.trend === 'up' ? '↑' : '↓'}
+                        </span>
+                    )}
+                </div>
+                <p className="text-[10px] text-gray-600 mt-1 font-mono">{currentMetrics.heatingPower.technicalLabel}</p>
               </div>
 
-              <div className="bg-[#0b0f19] p-4 rounded-lg border border-border hover:border-gray-600 transition">
+              <div className="bg-[#111827] p-4 rounded-lg border border-border hover:border-gray-600 transition">
                 <div className="flex justify-between items-start mb-2">
-                  <p className="text-xs text-gray-500">{system.metrics.systemBreathing.simpleEnglishLabel}</p>
-                  <ActivityIndicator status={system.metrics.systemBreathing.status} />
+                  <p className="text-xs text-gray-500">{currentMetrics.systemBreathing.simpleEnglishLabel}</p>
+                  <ActivityIndicator status={currentMetrics.systemBreathing.status} />
                 </div>
                 <p className="text-xl font-semibold text-white">
-                  {system.metrics.systemBreathing.value}
+                  {currentMetrics.systemBreathing.value}
                 </p>
-                <p className="text-[10px] text-gray-600 mt-1 font-mono">{system.metrics.systemBreathing.technicalLabel}</p>
+                <p className="text-[10px] text-gray-600 mt-1 font-mono">{currentMetrics.systemBreathing.technicalLabel}</p>
               </div>
 
-              <div className="bg-[#0b0f19] p-4 rounded-lg border border-border hover:border-gray-600 transition">
+              <div className="bg-[#111827] p-4 rounded-lg border border-border hover:border-gray-600 transition">
                  <div className="flex justify-between items-start mb-2">
                   <p className="text-xs text-gray-500">Fuel Economy</p>
-                  <ActivityIndicator status={system.metrics.efficiency.status} />
+                  <ActivityIndicator status={currentMetrics.efficiency.status} />
                 </div>
                 <p className="text-xl font-semibold text-white">
-                  {system.metrics.efficiency.value}%
+                  {currentMetrics.efficiency.value}%
                 </p>
                 <p className="text-[10px] text-gray-600 mt-1 font-mono">AFUE Rating</p>
               </div>
@@ -280,18 +347,18 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
         </div>
 
         {/* Action Footer */}
-        <div className="p-6 bg-[#0b0f19] border-t border-border">
+        <div className="p-6 bg-[#111827] border-t border-border">
            {showSyncButtons ? (
              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-               <button className="flex items-center justify-center gap-2 bg-[#151b2b] hover:bg-[#1e2538] text-white py-3 px-4 rounded-lg text-xs font-medium transition border border-border hover:border-gray-500 shadow-lg">
+               <button className="flex items-center justify-center gap-2 bg-[#1f2937] hover:bg-[#374151] text-white py-3 px-4 rounded-lg text-xs font-medium transition border border-border hover:border-gray-500 shadow-lg">
                  <FileText className="w-3 h-3 text-green-400" />
                  Sync to Jobber
                </button>
-               <button className="flex items-center justify-center gap-2 bg-[#151b2b] hover:bg-[#1e2538] text-white py-3 px-4 rounded-lg text-xs font-medium transition border border-border hover:border-gray-500 shadow-lg">
+               <button className="flex items-center justify-center gap-2 bg-[#1f2937] hover:bg-[#374151] text-white py-3 px-4 rounded-lg text-xs font-medium transition border border-border hover:border-gray-500 shadow-lg">
                  <Wrench className="w-3 h-3 text-blue-400" />
                  Sync ServiceTitan
                </button>
-               <button className="flex items-center justify-center gap-2 bg-[#151b2b] hover:bg-[#1e2538] text-white py-3 px-4 rounded-lg text-xs font-medium transition border border-border hover:border-gray-500 shadow-lg">
+               <button className="flex items-center justify-center gap-2 bg-[#1f2937] hover:bg-[#374151] text-white py-3 px-4 rounded-lg text-xs font-medium transition border border-border hover:border-gray-500 shadow-lg">
                  <Send className="w-3 h-3 text-amber-400" />
                  Sync Housecall
                </button>
