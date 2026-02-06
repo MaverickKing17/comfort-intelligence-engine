@@ -6,6 +6,7 @@ interface SpotlightCardProps {
   spotlightColor?: string;
   onClick?: () => void;
   goldGlow?: boolean; // For the Lead-Gen gold pulse
+  ariaLabel?: string;
 }
 
 export const SpotlightCard: React.FC<SpotlightCardProps> = ({ 
@@ -13,7 +14,8 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
   className = "", 
   spotlightColor = "rgba(255, 255, 255, 0.08)",
   onClick,
-  goldGlow = false
+  goldGlow = false,
+  ariaLabel
 }) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -33,10 +35,19 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
     setOpacity(0);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   // Determine border color based on goldGlow prop
   const borderClass = goldGlow 
     ? "border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)] animate-pulse" 
-    : "border-[#1f1f23]";
+    : "border-border";
+
+  const isClickable = !!onClick;
 
   return (
     <div
@@ -45,7 +56,12 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
-      className={`relative overflow-hidden bg-card rounded-xl border ${borderClass} transition-all duration-300 ${className}`}
+      onKeyDown={handleKeyDown}
+      role={isClickable ? "button" : "region"}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-label={ariaLabel}
+      aria-pressed={isClickable ? undefined : undefined} // button role doesn't strictly need aria-pressed unless it's a toggle
+      className={`relative overflow-hidden bg-card rounded-xl border ${borderClass} transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${isClickable ? 'cursor-pointer' : ''} ${className}`}
     >
       <div
         className="pointer-events-none absolute -inset-px transition-opacity duration-300"
@@ -53,6 +69,7 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
           opacity,
           background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 40%)`,
         }}
+        aria-hidden="true"
       />
       <div className="relative h-full z-10">{children}</div>
     </div>
