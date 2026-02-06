@@ -7,6 +7,7 @@ interface SpotlightCardProps {
   onClick?: () => void;
   goldGlow?: boolean; // For the Lead-Gen gold pulse
   ariaLabel?: string;
+  opensModal?: boolean;
 }
 
 export const SpotlightCard: React.FC<SpotlightCardProps> = ({ 
@@ -15,7 +16,8 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
   spotlightColor = "rgba(255, 255, 255, 0.08)",
   onClick,
   goldGlow = false,
-  ariaLabel
+  ariaLabel,
+  opensModal = false
 }) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -60,7 +62,7 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
       role={isClickable ? "button" : "region"}
       tabIndex={isClickable ? 0 : undefined}
       aria-label={ariaLabel}
-      aria-pressed={isClickable ? undefined : undefined} // button role doesn't strictly need aria-pressed unless it's a toggle
+      aria-haspopup={opensModal ? "dialog" : undefined}
       className={`relative overflow-hidden bg-card rounded-xl border ${borderClass} transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${isClickable ? 'cursor-pointer' : ''} ${className}`}
     >
       <div

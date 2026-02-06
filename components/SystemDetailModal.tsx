@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HVACSystem, HealthStatus } from '../types';
-import { X, Wrench, FileText, Send, Zap, BrainCircuit, TrendingDown, Clock, CalendarCheck, Wifi, CheckCircle2, Phone, MessageSquare, ShieldAlert } from 'lucide-react';
+import { X, Wrench, FileText, Send, Zap, BrainCircuit, TrendingDown, Clock, CalendarCheck, Wifi, CheckCircle2, Phone, MessageSquare, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface SystemDetailModalProps {
   system: HVACSystem;
@@ -33,6 +33,29 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
   }, []);
 
   const toggleCheck = (id: string) => setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // Mocked AI Predictive Logic
+  const getPredictiveMaintenance = () => {
+    const isWorn = currentMetrics.heatingPower.status !== HealthStatus.Good;
+    return [
+      {
+        id: 'pm_1',
+        type: 'Flame Sensor Polishing',
+        date: 'Oct 24, 2026',
+        reason: 'Micro-amp jitter detected in ignition sequence',
+        urgency: isWorn ? 'High' : 'Normal'
+      },
+      {
+        id: 'pm_2',
+        type: 'Inducer Draft Motor Audit',
+        date: 'Dec 12, 2026',
+        reason: 'Current draw trending 12% above seasonal baseline',
+        urgency: 'Normal'
+      }
+    ];
+  };
+
+  const maintenanceForecast = getPredictiveMaintenance();
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200">
@@ -93,14 +116,43 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
                </div>
             </div>
 
+            {/* NEW: AI Predictive Maintenance Outlook */}
+            <div className="space-y-4">
+               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                 <BrainCircuit className="w-3 h-3 text-emerald-400" />
+                 Predictive Maintenance Outlook
+               </h3>
+               <div className="grid gap-3">
+                  {maintenanceForecast.map(item => (
+                    <div key={item.id} className="p-4 rounded-xl border border-border bg-white/5 hover:border-emerald-500/30 transition-all group">
+                       <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                             <Sparkles className="w-3 h-3 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                             <h4 className="text-sm font-semibold text-gray-200">{item.type}</h4>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">
+                             {item.date}
+                          </span>
+                       </div>
+                       <p className="text-xs text-gray-500 leading-relaxed">
+                          <span className="text-emerald-500/80 font-medium">Rationale:</span> {item.reason}
+                       </p>
+                    </div>
+                  ))}
+               </div>
+            </div>
+
             {/* Live Telemetry */}
-            <div className="grid grid-cols-3 gap-4">
-               {[system.metrics.heatingPower, system.metrics.systemBreathing, system.metrics.efficiency].map((m, i) => (
-                 <div key={i} className="bg-black/20 p-3 rounded-lg border border-border">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold">{m.simpleEnglishLabel}</p>
-                    <p className="text-lg font-bold text-white">{m.value}{m.unit}</p>
-                 </div>
-               ))}
+            <div>
+               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Live Telemetry</h3>
+               <div className="grid grid-cols-3 gap-4">
+                  {[system.metrics.heatingPower, system.metrics.systemBreathing, system.metrics.efficiency].map((m, i) => (
+                    <div key={i} className="bg-black/20 p-3 rounded-lg border border-border">
+                       <p className="text-[10px] text-gray-500 uppercase font-bold">{m.simpleEnglishLabel}</p>
+                       <p className="text-lg font-bold text-white">{m.value}{m.unit}</p>
+                    </div>
+                  ))}
+               </div>
             </div>
           </div>
 
