@@ -1,4 +1,60 @@
-import { HVACSystem, HealthStatus } from './types';
+import { HVACSystem, HealthStatus, Opportunity, TriageCase } from './types';
+
+export const MOCK_TRIAGE_QUEUE: TriageCase[] = [
+  {
+    id: 'tr_001',
+    timestamp: '2026-02-05T08:15:00Z',
+    source: 'Thermostat',
+    reason: 'Rapid Short Cycling',
+    suggestedOutcome: 'Dry Run',
+    status: 'Open',
+    priority: 1,
+    healthScore: 42
+  },
+  {
+    id: 'tr_002',
+    timestamp: '2026-02-05T09:30:00Z',
+    source: 'Phone',
+    reason: 'No Heat Call',
+    suggestedOutcome: 'Dispatch',
+    status: 'In Progress',
+    priority: 2,
+    healthScore: 10
+  },
+  {
+    id: 'tr_003',
+    timestamp: '2026-02-05T10:00:00Z',
+    source: 'Thermostat',
+    reason: 'Efficiency Degradation',
+    suggestedOutcome: 'High-margin Lead',
+    status: 'Open',
+    priority: 3,
+    healthScore: 68
+  }
+];
+
+export const MOCK_OPPORTUNITIES: Opportunity[] = [
+  {
+    id: 'opp_001',
+    customerName: 'Sarah Jenkins',
+    address: '1288 Yonge St, Toronto',
+    systemAge: 13,
+    healthScore: 72,
+    estRevenue: 8500,
+    contractStatus: 'Expiring',
+    nextAction: 'Email Quote'
+  },
+  {
+    id: 'opp_002',
+    customerName: 'David Rossi',
+    address: '880 The Queensway, Etobicoke',
+    systemAge: 2,
+    healthScore: 98,
+    estRevenue: 1200,
+    contractStatus: 'Active',
+    nextAction: 'Schedule Annual MA'
+  }
+];
 
 export const MOCK_SYSTEMS: HVACSystem[] = [
   {
@@ -6,9 +62,10 @@ export const MOCK_SYSTEMS: HVACSystem[] = [
     address: '1288 Yonge St, Toronto',
     ownerName: 'Sarah Jenkins',
     systemType: 'Lennox SLP99V',
-    installDate: '2012-05-15', // > 10 years old
+    installDate: '2012-05-15',
     lastServiceDate: '2025-11-01',
     location: { lat: 43.68, lng: -79.39, neighborhood: 'North York' },
+    activeTriage: MOCK_TRIAGE_QUEUE[2],
     metrics: {
       heatingPower: {
         label: 'Heating Power',
@@ -54,6 +111,7 @@ export const MOCK_SYSTEMS: HVACSystem[] = [
     installDate: '2023-08-10',
     lastServiceDate: '2025-12-20',
     location: { lat: 43.64, lng: -79.37, neighborhood: 'Downtown Core' },
+    activeTriage: MOCK_TRIAGE_QUEUE[1],
     metrics: {
       heatingPower: {
         label: 'Heating Power',
@@ -89,41 +147,5 @@ export const MOCK_SYSTEMS: HVACSystem[] = [
         isUrgent: false
       }
     ]
-  },
-  {
-    id: 'sys_003',
-    address: '880 The Queensway, Etobicoke',
-    ownerName: 'David Rossi',
-    systemType: 'Ecobee Smart + Rheem',
-    installDate: '2024-01-15',
-    lastServiceDate: '2026-01-10',
-    location: { lat: 43.62, lng: -79.51, neighborhood: 'Etobicoke' },
-    metrics: {
-      heatingPower: {
-        label: 'Heating Power',
-        technicalLabel: 'Delta-T',
-        simpleEnglishLabel: 'Heating Output',
-        value: 98,
-        unit: '%',
-        status: HealthStatus.Good,
-        trend: 'stable'
-      },
-      systemBreathing: {
-        label: 'System Breathing',
-        technicalLabel: 'Static Pressure',
-        simpleEnglishLabel: 'Airflow Health',
-        value: 'Optimal',
-        status: HealthStatus.Good
-      },
-      efficiency: {
-        label: 'Efficiency',
-        technicalLabel: 'AFUE',
-        simpleEnglishLabel: 'Fuel Economy',
-        value: 98,
-        unit: '%',
-        status: HealthStatus.Good
-      }
-    },
-    insights: []
   }
 ];

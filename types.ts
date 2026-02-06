@@ -4,23 +4,47 @@ export enum HealthStatus {
   Critical = 'Critical'
 }
 
+export type Role = 'Admin' | 'Dispatcher' | 'CSR' | 'Technician' | 'Analyst';
+
 export interface Metric {
   label: string;
   value: string | number;
   unit?: string;
   status: HealthStatus;
   trend?: 'up' | 'down' | 'stable';
-  simpleEnglishLabel: string; // "Heating Power"
-  technicalLabel: string; // "Delta-T"
+  simpleEnglishLabel: string;
+  technicalLabel: string;
 }
 
 export interface AIInsight {
   type: 'NUISANCE_FILTER' | 'LEAD_GEN' | 'MAINTENANCE';
   title: string;
   description: string;
-  valueProp?: string; // "$6,500 Rebate"
+  valueProp?: string;
   isUrgent: boolean;
   predictedFailureDate?: string;
+}
+
+export interface TriageCase {
+  id: string;
+  timestamp: string;
+  source: 'Thermostat' | 'Phone' | 'Web';
+  reason: string;
+  suggestedOutcome: 'Dry Run' | 'Dispatch' | 'Monitor' | 'High-margin Lead';
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Dispatched';
+  priority: number;
+  healthScore: number;
+}
+
+export interface Opportunity {
+  id: string;
+  customerName: string;
+  address: string;
+  systemAge: number;
+  healthScore: number;
+  estRevenue: number;
+  contractStatus: 'Active' | 'None' | 'Expiring';
+  nextAction: string;
 }
 
 export interface HVACSystem {
@@ -31,8 +55,8 @@ export interface HVACSystem {
   installDate: string;
   lastServiceDate: string;
   metrics: {
-    heatingPower: Metric; // Delta-T
-    systemBreathing: Metric; // Static Pressure
+    heatingPower: Metric;
+    systemBreathing: Metric;
     efficiency: Metric;
   };
   insights: AIInsight[];
@@ -41,4 +65,5 @@ export interface HVACSystem {
     lng: number;
     neighborhood: string;
   };
+  activeTriage?: TriageCase;
 }
