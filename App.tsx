@@ -7,21 +7,46 @@ import { SystemDetailModal } from './components/SystemDetailModal';
 import { HomeHealthCertificate } from './components/HomeHealthCertificate';
 import { KpiTile } from './components/KpiTile';
 import { HVACSystem } from './types';
-import { Search, Bell, Activity, Zap, ListFilter, Settings, Wifi, Database, ArrowUpRight, Book, Radio, LayoutGrid, Layers } from 'lucide-react';
+import { Search, Bell, Activity, Zap, ListFilter, Settings, Wifi, Database, ArrowUpRight, Book, Radio, LayoutGrid, Layers, Palette, Upload, Check, Globe } from 'lucide-react';
 
-type View = 'dashboard' | 'queue' | 'opportunities' | 'settings';
+type View = 'dashboard' | 'queue' | 'opportunities' | 'settings' | 'branding';
+
+interface BrandConfig {
+  companyName: string;
+  tagline: string;
+  primaryColor: string;
+  logoUrl: string | null;
+}
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedSystem, setSelectedSystem] = useState<HVACSystem | null>(null);
   const [showCertificate, setShowCertificate] = useState(false);
+  
+  // White Label State
+  const [brand, setBrand] = useState<BrandConfig>({
+    companyName: 'AMBIENT TWIN',
+    tagline: 'Intelligence OS',
+    primaryColor: '#0ea5e9', // Sky 500
+    logoUrl: null
+  });
 
   const urgentLead = MOCK_SYSTEMS.find(s => s.insights.some(i => i.isUrgent));
   const healthySystem = MOCK_SYSTEMS.find(s => !s.insights.some(i => i.isUrgent));
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBrand(prev => ({ ...prev, logoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const renderDashboard = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Top Bar: KPI Tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         <KpiTile label="ACTIVE ALERTS" value="12" trend="+2 today" trendColor="text-rose-400" onClick={() => setCurrentView('queue')} />
         <KpiTile label="DRY RUNS PREVENTED" value="48" trend="85% SUCCESS" trendColor="text-emerald-400" />
@@ -37,9 +62,7 @@ const App: React.FC = () => {
         <button onClick={() => setCurrentView('opportunities')} className="text-[11px] text-sky-400 font-bold uppercase tracking-widest hover:text-sky-300 transition-colors">View All Leads</button>
       </div>
 
-      {/* Main 3-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Column 1: Lead Details */}
         <SpotlightCard goldGlow={true} className="h-full flex flex-col" onClick={() => urgentLead && setSelectedSystem(urgentLead)}>
           <div className="p-8 flex flex-col h-full space-y-8">
             <div className="flex justify-between items-start">
@@ -73,7 +96,6 @@ const App: React.FC = () => {
           </div>
         </SpotlightCard>
 
-        {/* Column 2: Performance Telemetry */}
         <SpotlightCard className="h-full flex flex-col" onClick={() => healthySystem && setSelectedSystem(healthySystem)}>
           <div className="p-10 flex flex-col items-center justify-center text-center h-full space-y-10">
             <RadialGauge value={98} label="HEALTH" status={healthySystem?.metrics.heatingPower.status || 'Good'} size={140} />
@@ -84,7 +106,6 @@ const App: React.FC = () => {
           </div>
         </SpotlightCard>
 
-        {/* Column 3: Live Grid & Pulse */}
         <div className="flex flex-col gap-8">
           <div className="h-[320px] rounded-3xl overflow-hidden border border-slate-800 shadow-xl relative bg-slate-950">
             <GTAClusterMap />
@@ -109,6 +130,164 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBranding = () => (
+    <div className="max-w-5xl animate-in slide-in-from-bottom-4 duration-500 space-y-12 pb-20">
+      <header className="space-y-2">
+        <h2 className="text-4xl font-bold text-white tracking-tighter">White Label Onboarding</h2>
+        <p className="text-slate-400 text-sm font-medium">Configure your HVAC enterprise identity across the platform</p>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Configuration Panel */}
+        <div className="space-y-8">
+          <section className="bg-slate-900/60 border border-slate-800 rounded-3xl p-10 space-y-8 shadow-2xl">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-sky-500/10 rounded-xl border border-sky-500/20">
+                <Palette className="w-6 h-6 text-sky-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white tracking-tight">Brand Identity</h3>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Company Name</label>
+                <input 
+                  type="text" 
+                  value={brand.companyName}
+                  onChange={(e) => setBrand(prev => ({ ...prev, companyName: e.target.value.toUpperCase() }))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-6 py-4 text-white font-bold outline-none focus:border-sky-500 transition-all uppercase tracking-wider"
+                  placeholder="ENTER COMPANY NAME"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Platform Tagline</label>
+                <input 
+                  type="text" 
+                  value={brand.tagline}
+                  onChange={(e) => setBrand(prev => ({ ...prev, tagline: e.target.value }))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-6 py-4 text-white font-medium outline-none focus:border-sky-500 transition-all"
+                  placeholder="Intelligence OS"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Primary Color</label>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="color" 
+                      value={brand.primaryColor}
+                      onChange={(e) => setBrand(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      className="w-12 h-12 rounded-xl bg-transparent border-none cursor-pointer"
+                    />
+                    <span className="text-xs font-mono text-slate-400 uppercase">{brand.primaryColor}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Region Control</label>
+                  <div className="flex items-center gap-2 h-12">
+                    <Globe className="w-4 h-4 text-slate-600" />
+                    <span className="text-xs font-bold text-slate-300">Toronto/GTA Core</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="bg-slate-900/60 border border-slate-800 rounded-3xl p-10 space-y-8 shadow-2xl">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                <Upload className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white tracking-tight">Logo Assets</h3>
+            </div>
+            
+            <div className="relative group">
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleLogoUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="border-2 border-dashed border-slate-800 rounded-3xl p-12 text-center group-hover:border-sky-500/40 group-hover:bg-slate-950/40 transition-all flex flex-col items-center gap-4">
+                {brand.logoUrl ? (
+                  <img src={brand.logoUrl} alt="Logo Preview" className="h-16 object-contain" />
+                ) : (
+                  <Upload className="w-10 h-10 text-slate-700" />
+                )}
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-white">Upload Brand Logo</p>
+                  <p className="text-xs text-slate-500">SVG or PNG Preferred (Max 2MB)</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <button className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-6 rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-4">
+            <Check className="w-5 h-5" /> Save Branding Protocol
+          </button>
+        </div>
+
+        {/* Live Preview Panel */}
+        <div className="space-y-8 sticky top-36 h-fit">
+          <div className="flex items-center gap-4">
+             <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Identity Preview</h3>
+             <div className="h-px flex-1 bg-slate-800"></div>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 rounded-[2.5rem] shadow-elevated overflow-hidden p-2">
+             <div className="bg-slate-900/50 rounded-[2rem] h-[500px] flex flex-col overflow-hidden">
+                {/* Mock Nav Bar */}
+                <div className="h-16 border-b border-slate-800 flex items-center px-8 justify-between bg-slate-900">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: brand.primaryColor }}>
+                      {brand.logoUrl ? <img src={brand.logoUrl} className="w-5 h-5 object-contain" /> : brand.companyName.charAt(0)}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-white tracking-tighter">{brand.companyName}</span>
+                      <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">{brand.tagline}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-4 h-4 rounded-full bg-slate-800" />
+                    <div className="w-4 h-4 rounded-full bg-slate-800" />
+                  </div>
+                </div>
+
+                {/* Mock Body */}
+                <div className="p-8 space-y-6">
+                   <div className="h-4 w-32 bg-slate-800 rounded-full" />
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="h-32 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col items-center justify-center p-4 space-y-4">
+                         <div className="w-16 h-16 rounded-full border-4 border-slate-800 flex items-center justify-center">
+                            <div className="w-10 h-1 text-white rounded-full" style={{ backgroundColor: brand.primaryColor }} />
+                         </div>
+                         <div className="h-2 w-12 bg-slate-800 rounded-full" />
+                      </div>
+                      <div className="h-32 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3" style={{ borderLeft: `4px solid ${brand.primaryColor}` }}>
+                         <div className="h-3 w-20 bg-slate-800 rounded-full" />
+                         <div className="h-2 w-full bg-slate-800 rounded-full" />
+                         <div className="h-2 w-2/3 bg-slate-800 rounded-full" />
+                         <div className="mt-auto h-2 w-10 rounded-full" style={{ backgroundColor: brand.primaryColor }} />
+                      </div>
+                   </div>
+                </div>
+
+                <div className="mt-auto p-8 border-t border-slate-800 text-center">
+                   <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Powered by Ambient Twin Intelligence</p>
+                </div>
+             </div>
+          </div>
+          
+          <p className="text-xs text-slate-500 text-center px-12 leading-relaxed italic">
+            "Your brand identity will be applied to all customer-facing reports, dispatch notifications, and technician dashboards."
+          </p>
         </div>
       </div>
     </div>
@@ -170,16 +349,28 @@ const App: React.FC = () => {
       <nav className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-900 h-24 flex items-center justify-between px-12 shadow-2xl shadow-black/50" role="navigation">
         <div className="flex items-center gap-16">
           <div className="flex items-center gap-5 group cursor-pointer" onClick={() => setCurrentView('dashboard')}>
-            <div className="w-12 h-12 bg-sky-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-sky-600/30 group-hover:scale-105 transition-all">At</div>
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-sky-600/30 group-hover:scale-105 transition-all overflow-hidden"
+              style={{ backgroundColor: brand.primaryColor }}
+            >
+              {brand.logoUrl ? (
+                <img src={brand.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                brand.companyName.charAt(0)
+              )}
+            </div>
             <div className="flex flex-col">
-              <span className="font-bold text-xl tracking-tighter leading-tight text-white">AMBIENT TWIN</span>
-              <span className="text-[10px] font-bold text-sky-400 uppercase tracking-[0.2em] leading-tight">Intelligence OS</span>
+              <span className="font-bold text-xl tracking-tighter leading-tight text-white">{brand.companyName}</span>
+              <span className="text-[10px] font-bold text-sky-400 uppercase tracking-[0.2em] leading-tight" style={{ color: brand.primaryColor }}>{brand.tagline}</span>
             </div>
           </div>
           <div className="hidden lg:flex items-center gap-4 text-[11px] font-bold uppercase tracking-widest">
              <button onClick={() => setCurrentView('dashboard')} className={`px-6 py-3 rounded-lg transition-all ${currentView === 'dashboard' ? 'bg-slate-900 text-white border border-slate-800 shadow-xl' : 'text-slate-500 hover:text-slate-200'}`}>Dashboard</button>
              <button onClick={() => setCurrentView('queue')} className={`px-6 py-3 rounded-lg transition-all ${currentView === 'queue' ? 'bg-slate-900 text-white border border-slate-800 shadow-xl' : 'text-slate-500 hover:text-slate-200'}`}>Triage Queue</button>
              <button onClick={() => setCurrentView('opportunities')} className={`px-6 py-3 rounded-lg transition-all ${currentView === 'opportunities' ? 'bg-slate-900 text-white border border-slate-800 shadow-xl' : 'text-slate-500 hover:text-slate-200'}`}>Opportunities</button>
+             <button onClick={() => setCurrentView('branding')} className={`px-6 py-3 rounded-lg transition-all ${currentView === 'branding' ? 'bg-slate-900 text-white border border-slate-800 shadow-xl' : 'text-slate-500 hover:text-slate-200'} flex items-center gap-2`}>
+                <Palette className="w-3.5 h-3.5" /> White Label
+             </button>
           </div>
         </div>
         <div className="flex items-center gap-8">
@@ -200,9 +391,9 @@ const App: React.FC = () => {
           {currentView === 'queue' && renderQueue()}
           {currentView === 'opportunities' && <div>Opportunity List View</div>}
           {currentView === 'settings' && <div>Settings View</div>}
+          {currentView === 'branding' && renderBranding()}
         </main>
 
-        {/* Floating Sidebar Icons (As seen in previous design) */}
         <aside className="fixed right-6 bottom-1/4 z-50 flex flex-col gap-4">
            {[Book, Radio, LayoutGrid, Layers].map((Icon, idx) => (
              <button key={idx} className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-xl hover:scale-110 transition-transform">

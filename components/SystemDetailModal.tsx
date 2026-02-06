@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HVACSystem, HealthStatus } from '../types';
-import { X, Wrench, FileText, Zap, BrainCircuit, Clock, CalendarCheck, CheckCircle2, Phone, MessageSquare, ShieldAlert, Sparkles, ChevronRight, AlertTriangle, History, ArrowUpRight } from 'lucide-react';
+import { GoogleGenAI, Type } from "@google/genai";
+import { X, Wrench, FileText, Zap, BrainCircuit, Clock, CalendarCheck, CheckCircle2, Phone, MessageSquare, ShieldAlert, Sparkles, ChevronRight, AlertTriangle, History, ArrowUpRight, Loader2, Target } from 'lucide-react';
 
 interface SystemDetailModalProps {
   system: HVACSystem;
@@ -8,9 +9,19 @@ interface SystemDetailModalProps {
   onGenerateReport: () => void;
 }
 
+interface AIPrediction {
+  predictionDate: string;
+  maintenanceType: string;
+  reasoning: string;
+  confidenceScore: number;
+}
+
 export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, onClose, onGenerateReport }) => {
   const [currentMetrics, setCurrentMetrics] = useState(system.metrics);
   const [lastSynced, setLastSynced] = useState(new Date());
+  const [aiPrediction, setAiPrediction] = useState<AIPrediction | null>(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+  
   const [checklist, setChecklist] = useState<Record<string, boolean>>({
     breaker: false,
     filter: false,
@@ -18,7 +29,50 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
     setpoint: false,
   });
 
+  const runAIPrediction = async () => {
+    setIsPredicting(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Perform an expert HVAC diagnostic forecast for this specific system:
+          Address: ${system.address}
+          Type: ${system.systemType}
+          Installation Date: ${system.installDate}
+          Current Performance Metrics: ${JSON.stringify(currentMetrics)}
+          
+          Identify the most likely next major component failure or required maintenance. 
+          Be specific (e.g., 'Capacitor Replacement', 'Refrigerant Charge Adjustment'). 
+          Provide a realistic estimated date within the next 24 months.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              predictionDate: { type: Type.STRING, description: "Predicted maintenance date (e.g. October 15, 2026)" },
+              maintenanceType: { type: Type.STRING, description: "Technical name of the maintenance/repair task" },
+              reasoning: { type: Type.STRING, description: "Detailed AI reasoning based on age and telemetry" },
+              confidenceScore: { type: Type.NUMBER, description: "AI confidence score from 0 to 100" }
+            },
+            required: ["predictionDate", "maintenanceType", "reasoning", "confidenceScore"]
+          }
+        }
+      });
+      
+      const text = response.text;
+      if (text) {
+        setAiPrediction(JSON.parse(text));
+      }
+    } catch (error) {
+      console.error("AI Prediction failed:", error);
+    } finally {
+      setIsPredicting(false);
+    }
+  };
+
   useEffect(() => {
+    runAIPrediction();
+    
     const interval = setInterval(() => {
       setCurrentMetrics(prev => ({
          ...prev,
@@ -33,27 +87,6 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
   }, []);
 
   const toggleCheck = (id: string) => setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
-
-  const failureRisks = [
-    {
-      id: 'fail_1',
-      component: 'Heat Exchanger Core',
-      predictedDate: 'February 18, 2026',
-      severity: 'Critical',
-      severityColor: 'text-rose-400',
-      severityBg: 'bg-rose-500/10',
-      confidence: '94%',
-    },
-    {
-      id: 'fail_2',
-      component: 'Blower Capacitor',
-      predictedDate: 'March 05, 2026',
-      severity: 'High',
-      severityColor: 'text-amber-400',
-      severityBg: 'bg-amber-500/10',
-      confidence: '82%',
-    }
-  ];
 
   return (
     <div 
@@ -98,6 +131,79 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
 
         <div className="flex flex-col lg:flex-row flex-1 overflow-hidden bg-slate-900">
           <div className="flex-1 overflow-y-auto p-12 space-y-16 border-r border-slate-800 bg-slate-900/40">
+            
+            {/* AI PREDICTION SECTION */}
+            <section className="space-y-8 animate-in slide-in-from-top-4 duration-500">
+               <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                    <Sparkles className="w-4 h-4 text-sky-400" />
+                    AI Maintenance Forecast
+                  </h3>
+                  <button 
+                    onClick={runAIPrediction}
+                    disabled={isPredicting}
+                    className="text-[10px] text-slate-500 hover:text-sky-400 font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
+                  >
+                    {isPredicting ? <Loader2 className="w-3 h-3 animate-spin" /> : <History className="w-3 h-3" />}
+                    Refresh Forecast
+                  </button>
+               </div>
+
+               <div className={`relative overflow-hidden p-10 rounded-[2rem] border transition-all duration-700 ${isPredicting ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-950/80 border-sky-500/20 shadow-[0_0_40px_rgba(56,189,248,0.05)]'}`}>
+                  {isPredicting ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                       <BrainCircuit className="w-12 h-12 text-sky-500 animate-pulse" />
+                       <div className="space-y-2 text-center">
+                         <p className="text-white font-bold tracking-tight">Synthesizing Telemetry...</p>
+                         <p className="text-xs text-slate-500 uppercase tracking-[0.2em]">Evaluating wear patterns and install age</p>
+                       </div>
+                    </div>
+                  ) : aiPrediction ? (
+                    <div className="flex flex-col md:flex-row gap-12">
+                       <div className="flex-1 space-y-8">
+                          <div className="flex items-center gap-6">
+                             <div className="p-4 bg-sky-500/10 rounded-2xl border border-sky-500/20">
+                                <CalendarCheck className="w-8 h-8 text-sky-400" />
+                             </div>
+                             <div>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Projected Event Date</p>
+                                <h4 className="text-3xl font-black text-white tracking-tighter">{aiPrediction.predictionDate}</h4>
+                             </div>
+                          </div>
+                          
+                          <div className="p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                             <h5 className="text-[10px] text-sky-400 font-bold uppercase tracking-widest mb-3">Diagnostic Analysis</h5>
+                             <p className="text-sm text-slate-200 leading-relaxed font-medium">{aiPrediction.reasoning}</p>
+                          </div>
+                       </div>
+
+                       <div className="w-full md:w-64 space-y-8">
+                          <div className="p-6 bg-slate-900/50 rounded-2xl border border-slate-800 text-center">
+                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Maintenance Task</p>
+                             <p className="text-lg font-bold text-white tracking-tight">{aiPrediction.maintenanceType}</p>
+                          </div>
+                          <div className="p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                             <div className="flex justify-between items-center mb-3">
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Confidence</span>
+                                <span className="text-xs font-bold text-emerald-400">{aiPrediction.confidenceScore}%</span>
+                             </div>
+                             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-1000 ease-out" 
+                                  style={{ width: `${aiPrediction.confidenceScore}%` }}
+                                />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <p className="text-slate-500 text-sm font-medium">Predictive diagnostics offline. Run refresh to initialize.</p>
+                    </div>
+                  )}
+               </div>
+            </section>
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
               <div className="p-10 rounded-3xl bg-sky-500/5 border border-sky-500/20 relative overflow-hidden group">
                  <div className="flex items-start gap-8">
@@ -119,7 +225,7 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
                     <div className="p-3 bg-slate-900 rounded-xl border border-slate-700 text-slate-200">
                       <BrainCircuit className="w-6 h-6" />
                     </div>
-                    <h3 className="text-[11px] font-bold text-slate-500 tracking-widest uppercase">Executive Forecast</h3>
+                    <h3 className="text-[11px] font-bold text-slate-500 tracking-widest uppercase">Legacy Risk Profile</h3>
                  </div>
                  <div className="flex justify-between items-end">
                     <div>
@@ -127,51 +233,12 @@ export const SystemDetailModal: React.FC<SystemDetailModalProps> = ({ system, on
                        <p className="text-2xl text-white font-bold tracking-tighter">Heat Exchanger Core</p>
                     </div>
                     <div className="text-right">
-                       <p className="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-3">Failure Window</p>
+                       <p className="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-3">Historical Failure Window</p>
                        <p className="text-4xl text-rose-400 font-bold tracking-tighter">14 Days</p>
                     </div>
                  </div>
               </div>
             </div>
-
-            <section className="space-y-8">
-               <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-4">
-                 <AlertTriangle className="w-5 h-5 text-rose-400" />
-                 Anomaly Risk Analysis
-               </h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {failureRisks.map(risk => (
-                    <div key={risk.id} className="p-8 rounded-3xl border border-slate-700 hover:border-sky-500/30 hover:bg-slate-800/60 transition-all group shadow-sm bg-slate-800/20">
-                       <div className="flex justify-between items-start mb-8">
-                          <div className="flex items-center gap-5">
-                             <div className={`p-3 rounded-xl ${risk.severityBg} border border-slate-700`}>
-                                <AlertTriangle className={`w-6 h-6 ${risk.severityColor}`} />
-                             </div>
-                             <div>
-                                <h4 className="text-lg font-bold text-white tracking-tight">{risk.component}</h4>
-                                <span className={`text-[10px] font-bold uppercase tracking-widest ${risk.severityColor}`}>
-                                   {risk.severity} Risk Profile
-                                </span>
-                             </div>
-                          </div>
-                          <button className="p-3 bg-slate-900 hover:bg-slate-700 rounded-xl transition-all border border-slate-700 text-slate-400 hover:text-white">
-                             <History className="w-5 h-5" />
-                          </button>
-                       </div>
-                       <div className="flex items-center justify-between pt-8 border-t border-slate-800">
-                          <div>
-                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Predicted</p>
-                             <p className="text-sm text-white font-bold">{risk.predictedDate}</p>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Confidence</p>
-                             <span className="text-xl text-white font-bold">{risk.confidence}</span>
-                          </div>
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </section>
           </div>
 
           <aside className="w-full lg:w-[460px] bg-slate-800/30 p-12 overflow-y-auto space-y-12 flex flex-col border-l border-slate-800">
