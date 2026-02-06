@@ -14,14 +14,14 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({ value, label, status, 
   const strokeDashoffset = circumference - (value / 100) * circumference;
 
   let color = '#10b981'; // Green
-  let shadowColor = 'rgba(16, 185, 129, 0.4)';
+  let shadowColor = 'rgba(16, 185, 129, 0.6)';
   
   if (status === HealthStatus.Warning) {
     color = '#f59e0b'; // Amber
-    shadowColor = 'rgba(245, 158, 11, 0.4)';
+    shadowColor = 'rgba(245, 158, 11, 0.6)';
   } else if (status === HealthStatus.Critical) {
     color = '#ef4444'; // Red
-    shadowColor = 'rgba(239, 68, 68, 0.4)';
+    shadowColor = 'rgba(239, 68, 68, 0.6)';
   }
 
   return (
@@ -31,9 +31,8 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({ value, label, status, 
           className="transform -rotate-90 w-full h-full"
           viewBox="0 0 100 100"
         >
-          {/* Background Track with subtle depth */}
           <circle
-            className="text-white/[0.03]"
+            className="text-slate-900"
             strokeWidth="10"
             stroke="currentColor"
             fill="transparent"
@@ -41,7 +40,6 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({ value, label, status, 
             cx="50"
             cy="50"
           />
-          {/* Progress Path */}
           <circle
             stroke={color}
             strokeWidth="10"
@@ -59,13 +57,13 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({ value, label, status, 
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-black font-mono text-white tracking-tighter drop-shadow-md">{value}%</span>
+          <span className="text-2xl font-bold text-white tracking-tighter drop-shadow-lg">{value}%</span>
         </div>
       </div>
-      <div className="mt-3 flex flex-col items-center">
-        <span className="text-[10px] text-gray-500 font-black tracking-[0.2em] uppercase">{label}</span>
-        <div className={`h-1 w-8 rounded-full mt-1.5 ${status === HealthStatus.Good ? 'bg-emerald-500/20' : status === HealthStatus.Warning ? 'bg-amber-500/20' : 'bg-rose-500/20'}`}>
-          <div className="h-full bg-current rounded-full transition-all duration-1000" style={{ width: `${value}%`, backgroundColor: color }}></div>
+      <div className="mt-4 flex flex-col items-center">
+        <span className="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">{label}</span>
+        <div className={`h-1.5 w-10 rounded-full mt-2 bg-slate-900`}>
+          <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${value}%`, backgroundColor: color, boxShadow: `0 0 8px ${shadowColor}` }}></div>
         </div>
       </div>
     </div>
